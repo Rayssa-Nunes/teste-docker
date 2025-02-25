@@ -37,8 +37,10 @@ def search():
 
         lista = solr.search(f'titulo:{search_value}~2 OR codigo:{search_value}~2 OR id:{search_value}', rows=50)
         
-        print(lista)
-        return render_template(index_template, lista=lista)
+        # print(lista)
+        container_id = socket.gethostname()
+        node_name = os.getenv('NODE_NAME', 'Desconhecido')
+        return render_template(index_template, lista=lista, container_id=container_id, node_name=node_name)
     except Exception as e:
         print(f"Erro ao consultar o Solr: {e}")
         return render_template(index_template, lista=[]) 
