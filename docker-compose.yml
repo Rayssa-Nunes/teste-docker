@@ -1,0 +1,69 @@
+version: "3.8"
+
+services:
+  database:
+    image: rayssanunes/database_image:latest
+    environment:
+      POSTGRES_DB: db_ocupacoes
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+      PGCLIENTENCODING: UTF8
+    ports:
+      - "15432:5432"
+    volumes:
+      - ./data:/csv_data
+    networks:
+      - solr_network
+    deploy:
+      placement:
+        constraints: [ node.role == manager ]
+
+  solr:
+    image: rayssanunes/solr_image:latest
+    ports:
+      - "8983:8983"
+    depends_on:
+      - database
+    volumes:
+      - solr_data:/bitnami/solr
+    networks:
+      - solr_network
+    deploy:
+      placement:
+        constraints: [ node.role == manager ]
+
+  flask:
+    image: rayssanunes/flask_image:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - URL_SOLR=http://solr:8983/solr/ocupacoes
+      - NODE_NAME={{.Node.Hostname}}
+    depends_on:
+      - database
+      - solr
+    networks:
+      - solr_network
+    deploy:
+      replicas: 5
+      placement:
+        constraints: [ node.role == worker ]
+      
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8888:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [ node.role == manager ]
+
+volumes:
+  postgres_data:
+  solr_data:
+
+networks:
+  solr_network:
+    driver: overlay
